@@ -1,3 +1,6 @@
+import os
+import sys
+
 import asyncio
 
 import requests
@@ -6,6 +9,11 @@ import json
 from discord.ext import commands
 
 from sqlalchemy import create_engine, func, MetaData, Table, Column, BigInteger, String, TIMESTAMP
+
+if not os.path.isfile('config.py'):
+    sys.exit("'config.py' not found.")
+else:
+    import config
 
 class Prices(commands.Cog, name='prices'):
     # Initializes background collection of crypto data from CMC
@@ -78,7 +86,7 @@ class Prices(commands.Cog, name='prices'):
     async def send_prices(self):
         # Spits message to Discord channel
         await self.bot.wait_until_ready()
-        channel = self.bot.get_channel(806611515805138964)
+        channel = self.bot.get_channel(config.CHANNELS[0])
         while not self.bot.is_closed():
             message = 'Current prices:\n'
             for k, v in self.prices.items():
