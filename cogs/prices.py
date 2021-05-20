@@ -2,6 +2,7 @@ import os
 import sys
 
 import asyncio
+from datetime import datetime
 
 import requests
 import json
@@ -81,19 +82,22 @@ class Prices(commands.Cog, name='prices'):
                     'percent_1h': percent_1h
                 }
                 
-            await asyncio.sleep(60*30)
+            await asyncio.sleep(60*10)
             
     async def send_prices(self):
         # Spits message to Discord channel
         await self.bot.wait_until_ready()
         channel = self.bot.get_channel(config.CHANNELS[0])
         while not self.bot.is_closed():
-            message = 'Current prices:\n'
-            for k, v in self.prices.items():
-                if k in ['BTC', 'ETH', 'LINK', 'AAVE', 'DOGE']:
-                    message += f'{k} -- ${v["price"]} ({v["percent_1h"]}%)\n'
-            await channel.send(message)
-            await asyncio.sleep(60*60*12)
+            now = datetime.now().strftime("%H:%M")
+            if (now in ['06:00', '12:00', '18:00']):
+                message = 'Current prices:\n'
+                for k, v in self.prices.items():
+                    if k in ['BTC', 'ETH', 'LINK', 'AAVE', 'DOGE']:
+                        message += f'{k} -- ${v["price"]} ({v["percent_1h"]}%)\n'
+                await channel.send(message)
+                await asyncio.sleep(60)
+            await asyncio.sleep(1)
             
     @commands.command(name='getprice')
     async def get_price(self, ctx, coin='ALL'):
