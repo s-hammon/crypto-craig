@@ -35,11 +35,6 @@ class Prices(commands.Cog, name='prices'):
         while not self.bot.is_closed():
             # API request to CMC
             url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-            parameters = {
-                'start': '1',
-                'limit': '5000',
-                'convert': 'USD'
-            }
             
             headers = {
                 'Accepts': 'application/json',
@@ -47,7 +42,7 @@ class Prices(commands.Cog, name='prices'):
             }
             
             try:
-                response = requests.get(url, params=parameters, headers=headers)
+                response = requests.get(url, headers=headers)
                 response.raise_for_status()
                 data = json.loads(response.text)
             except (ConnectionError, Timeout, TooManyRedirects) as e:
