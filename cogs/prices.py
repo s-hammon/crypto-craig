@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 
 import requests
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 import json
 
 from discord.ext import commands
@@ -34,14 +35,26 @@ class Prices(commands.Cog, name='prices'):
         while not self.bot.is_closed():
             # API request to CMC
             url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+            parameters = {
+                'start': '1',
+                'limit': '5000',
+                'convert': 'USD'
+            }
+            
             headers = {
                 'Accepts': 'application/json',
-                'X-CMC_PRO_API_KEY': '1bc59ff0-44db-417a-818d-9f93408f36fc'}
+                'X-CMC_PRO_API_KEY': '1bc59ff0-44db-417a-818d-9f93408f36fc'
+            }
             
             try:
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, params=parameters, headers=headers)
+                response.raise_for_status()
                 data = json.loads(response.text)
-            except (ConnectionError) as e:
+            except (ConnectionError, Timeout, TooManyRedirects) as e:
+                data = json.loads(response.text)
+                code = data['status']['error_code']
+                message = data['status']['error_message']
+                print(f'{code}: {message}')
                 print(e)
             
             # Parse info from request
