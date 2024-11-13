@@ -21,6 +21,8 @@ def run():
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
 
     LOG_DIR = os.environ.get("LOG_DIR", "logs")
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
     handler = logging.FileHandler(Path(LOG_DIR) / "discord.log", encoding="utf-8", mode="w")
 
     intents = discord.Intents.default()
