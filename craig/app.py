@@ -16,7 +16,7 @@ def new_engine(token: str) -> Engine:
     return create_engine(url)
 
 def run():
-    from bot import CraigBot
+    from craig.bot import CraigBot
 
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
     print(f"Starting bot with token: {DISCORD_TOKEN}")

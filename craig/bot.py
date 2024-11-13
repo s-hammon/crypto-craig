@@ -4,7 +4,7 @@ import discord
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from models import Listing
+from craig.models import Listing
 
 
 class CraigBot(discord.Client):

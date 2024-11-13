@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from typing import Callable
 
-from handlers import get_listings, to_db
+from craig.handlers import get_listings, to_db
 
 
 MAX_RETRIES = 3
@@ -47,7 +47,3 @@ def safe_increment(iterations: int | None):
     if iterations is not None:
         iterations += 1
     return iterations
-
-
-if __name__ == "__main__":
-    asyncio.run(coin_worker(coin_job, 60*60))
