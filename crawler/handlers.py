@@ -4,7 +4,8 @@ import os
 from sqlalchemy.orm import Session
 
 from craig.app import new_engine
-from craig.models import CMCResponse, Listing
+from models.entities import CMCResponse
+from models.repositories import Listing
 
 
 TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "MISSING_TURSO_AUTH_TOKEN")
@@ -19,7 +20,7 @@ CMC_PRO_BASE_URL = "https://pro-api.coinmarketcap.com/v1"
 def get_listings() -> CMCResponse:
     url = f"{CMC_PRO_BASE_URL}/cryptocurrency/listings/latest"
     headers = _cmc_headers()
-    print(f"fetching data from {url} with headers: {headers}")
+    print(f"fetching data from {url}")
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()

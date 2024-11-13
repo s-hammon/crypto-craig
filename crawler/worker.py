@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from typing import Callable
 
-from craig.handlers import get_listings, to_db
+from crawler.handlers import get_listings, to_db
 
 
 MAX_RETRIES = 3

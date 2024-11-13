@@ -1,9 +1,8 @@
 import asyncio
 import unittest
 
-from sqlalchemy.util import counter
+from crawler.worker import coin_worker
 
-from crawler.app import coin_worker
 
 class TestCoinWorker(unittest.TestCase):
     def test_coin_worker_schedule(self):

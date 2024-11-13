@@ -1,10 +1,8 @@
-import os
-
 import discord
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from craig.models import Listing
+from models.repositories import Listing
 
 
 class CraigBot(discord.Client):

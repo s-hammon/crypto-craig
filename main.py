@@ -14,7 +14,7 @@ def main():
     args = parser.parse_args()
     match args.command:
         case "crawler":
-            from craig.crawler import coin_worker, coin_job
+            from crawler.worker import coin_worker, coin_job
             asyncio.run(coin_worker(coin_job, args.request_interval, args.max_iter))
         case "craig":
             from craig.app import run

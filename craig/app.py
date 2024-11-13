@@ -19,7 +19,6 @@ def run():
     from craig.bot import CraigBot
 
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
-    print(f"Starting bot with token: {DISCORD_TOKEN}")
 
     LOG_DIR = os.environ.get("LOG_DIR", "logs")
     handler = logging.FileHandler(Path(LOG_DIR) / "discord.log", encoding="utf-8", mode="w")
