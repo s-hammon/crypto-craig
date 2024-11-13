@@ -15,7 +15,7 @@ def new_engine(token: str) -> Engine:
     url = base_db_url + f"?authToken={token}&secure=true"
     return create_engine(url)
 
-if __name__ == "__main__":
+def run():
     from bot import CraigBot
 
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")

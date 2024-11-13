@@ -4,18 +4,13 @@ import os
 from sqlalchemy.orm import Session
 
 from app import new_engine
-from models import (
-    Base, 
-    CMCResponse,
-    Listing,
-)
+from models import CMCResponse, Listing
 
 
 TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "MISSING_TURSO_AUTH_TOKEN")
 
 
 engine = new_engine(TURSO_AUTH_TOKEN)
-Base.metadata.create_all(engine)
 
 CMC_PRO_API_KEY = os.environ.get("CMC_PRO_API_KEY")
 CMC_PRO_BASE_URL = "https://pro-api.coinmarketcap.com/v1"
