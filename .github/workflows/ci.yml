@@ -7,7 +7,7 @@ on:
 jobs:
   tests:
     name: Tests
-    runts-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
         uses: actions/checkout@v4
