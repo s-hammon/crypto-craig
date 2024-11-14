@@ -25,6 +25,13 @@ jobs:
       - name: Test with unittest
         run: python -m unittest discover -s tests -v
 
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Install ruff
         run: pip install ruff
       
