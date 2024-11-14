@@ -1,7 +1,0 @@
-PREFIX = ('cc.')
-TOKEN = '<your bot token>'
-APP_ID = ''
-OWNERS = []
-BLACKLIST = []
-BOOT_COGS = ['cogs.prices']
-CHANNELS = [<your channel IDs>]
