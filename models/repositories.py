@@ -24,6 +24,9 @@ class Listing(Base):
 
     def __repr__(self):
         return f"Listing(id={self.id!r}, coin_id={self.coin!r}, price={self.price!r})"
+        
+    def __eq__(self, other):
+        return self.id == other.id
 
     @classmethod
     def from_model(cls, model: ListingResponse):
