@@ -2,16 +2,18 @@ import asyncio
 from datetime import datetime
 from typing import Callable
 
+from sqlalchemy import Engine
+
 from crawler.handlers import get_listings, to_db
 
 
 MAX_RETRIES = 3
 
 
-async def coin_job():
+async def coin_job(engine: Engine):
     print(f"Fetching data at {datetime.now()}")
     response = get_listings()
-    to_db(response)
+    to_db(response, engine)
     print("data fetched and saved")
 
 
