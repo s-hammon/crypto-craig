@@ -1,5 +1,14 @@
+import os
 import argparse
 import asyncio
+
+from sqlalchemy import create_engine
+
+TURSO_DATABASE_URL = os.environ.get("DB_URL")
+TURSO_AUTH_TOKEN_DISCORD_CLIENT = os.environ.get(
+    "TURSO_AUTH_TOKEN_DISCORD_CLIENT", "MISSING_TURSO_AUTH_TOKEN"
+)
+DB_URL = f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN_DISCORD_CLIENT}&secure=true"
 
 
 def main():
@@ -18,11 +27,18 @@ def main():
         case "crawler":
             from crawler.worker import coin_worker, coin_job
 
-            asyncio.run(coin_worker(coin_job, args.request_interval, args.max_iter))
+            asyncio.run(
+                coin_worker(
+                    coin_job,
+                    args.request_interval,
+                    args.max_iter,
+                    engine=create_engine(DB_URL),
+                )
+            )
         case "craig":
             from craig.app import run
 
-            run(args.debug)
+            run(create_engine(DB_URL), args.debug)
 
 
 main()

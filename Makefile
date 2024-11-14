@@ -9,4 +9,7 @@ down:
 pretty:
 	@ruff format && ruff check
 
-.PHONY: up down pretty
+test:
+	@python -m unittest discover -s tests -v
+
+.PHONY: up down pretty test
