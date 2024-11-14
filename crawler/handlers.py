@@ -29,10 +29,11 @@ def get_listings() -> CMCResponse:
 
 
 def to_db(response: CMCResponse) -> None:
-    objs = [ Listing.from_model(data) for data in response.data ]
+    objs = [Listing.from_model(data) for data in response.data]
     with Session(engine) as session:
         session.add_all(objs)
         session.commit()
+
 
 def _cmc_headers():
     return {

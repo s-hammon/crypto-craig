@@ -14,18 +14,17 @@ async def coin_job():
     to_db(response)
     print("data fetched and saved")
 
+
 async def coin_worker(
-    job: Callable, 
-    request_interval: float, 
-    max_iter: int = -1,
-    **kwargs
+    job: Callable, request_interval: float, max_iter: int = -1, **kwargs
 ):
     iterations = None
     if max_iter == 0:
-        raise ValueError("max_iter must be greater than 0 or set to default value of -1")
+        raise ValueError(
+            "max_iter must be greater than 0 or set to default value of -1"
+        )
     elif max_iter > 0:
         iterations = 0
-
 
     failures = 0
     print("starting worker")
@@ -42,6 +41,7 @@ async def coin_worker(
                 raise Exception("Max retries reached")
 
         await asyncio.sleep(request_interval)
+
 
 def safe_increment(iterations: int | None):
     if iterations is not None:

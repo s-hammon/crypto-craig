@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+
 class Coin(BaseModel):
     id: int
     name: str
@@ -42,19 +43,18 @@ def transform_response(response: dict):
                     "id": resp["id"],
                     "name": resp["name"],
                     "symbol": resp["symbol"],
-                    "slug": resp["slug"]
+                    "slug": resp["slug"],
                 },
                 "quote": {
                     "price": resp["quote"]["USD"]["price"],
                     "volume_24h": resp["quote"]["USD"]["volume_24h"],
                     "percent_change_1h": resp["quote"]["USD"]["percent_change_1h"],
                     "percent_change_24h": resp["quote"]["USD"]["percent_change_24h"],
-                    "market_cap": resp["quote"]["USD"]["market_cap"]
+                    "market_cap": resp["quote"]["USD"]["market_cap"],
                 },
                 "circulating_supply": resp["circulating_supply"],
             }
             for resp in response["data"]
         ],
-        "status": response["status"]
+        "status": response["status"],
     }
-

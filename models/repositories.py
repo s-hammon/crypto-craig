@@ -24,7 +24,7 @@ class Listing(Base):
 
     def __repr__(self):
         return f"Listing(id={self.id!r}, coin_id={self.coin!r}, price={self.price!r})"
-        
+
     def __eq__(self, other):
         return self.id == other.id
 
@@ -32,7 +32,7 @@ class Listing(Base):
     def from_model(cls, model: ListingResponse):
         if not model.id:
             model.id = uuid.uuid4()
-        
+
         return cls(
             id=str(model.id),
             updated_at=datetime.now().isoformat(),
@@ -41,6 +41,5 @@ class Listing(Base):
             price=model.quote.price,
             volume_24h=model.quote.volume_24h,
             percent_1h=model.quote.percent_change_1h,
-            percent_24h=model.quote.percent_change_24h
+            percent_24h=model.quote.percent_change_24h,
         )
-

@@ -14,19 +14,18 @@ class CraigBot(discord.Client):
         while True:
             await self.change_presence(
                 activity=discord.Activity(
-                    type=discord.ActivityType.watching, 
-                    name="CoinMarketCap"
+                    type=discord.ActivityType.watching, name="CoinMarketCap"
                 )
             )
 
     async def on_ready(self):
         self.loop.create_task(self.status_task())
-        print(f'We have logged in as {self.user}')
+        print(f"We have logged in as {self.user}")
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author == self.user or message.author.bot:
             return
-        
+
         if message.content.startswith("!getprice"):
             split = message.content.split(" ")
             if len(split) != 2:
@@ -37,7 +36,9 @@ class CraigBot(discord.Client):
 
             result = get_listing_by_coin(self.engine, coin)
             if not result:
-                await message.reply(f"Could not find a price for {coin}.", mention_author=True)
+                await message.reply(
+                    f"Could not find a price for {coin}.", mention_author=True
+                )
                 return
 
             price = f"${result.price:,.2f}"
@@ -52,13 +53,19 @@ class CraigBot(discord.Client):
 
             await message.reply(msg, mention_author=True)
 
+
 def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
     # TODO: cache
     if not coin:
         raise ValueError("Coin is empty")
-    
+
     with Session(engine) as session:
-        stmt = select(Listing).where(Listing.coin.is_(coin)).order_by(Listing.updated_at.desc()).limit(1)
+        stmt = (
+            select(Listing)
+            .where(Listing.coin.is_(coin))
+            .order_by(Listing.updated_at.desc())
+            .limit(1)
+        )
         result = session.scalar(stmt)
 
     return result

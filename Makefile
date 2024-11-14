@@ -6,4 +6,7 @@ up:
 down:
 	@goose -dir sql/schema turso "${DB_URL}?authToken=${TURSO_AUTH_TOKEN}" down
 
-.PHONY: up down
+pretty:
+	@ruff format && ruff check
+
+.PHONY: up down pretty
