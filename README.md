@@ -1,10 +1,8 @@
 # crypto-craig
 
-## Fetches prices of all coins from CoinMarketCap, spits to discord channel(s) of your choosing.
+A [Discord.py](https://discordpy.readthedocs.io/en/stable) project. Use `!getprice <coin symbol>` in chat to get the latst price of your favorite bit-coinage. 
 
-### Backlog:
-1. Create bot(s) to display price(s) of tokens in their name(s)
-2. Add additional financial parameters for users to query (52-week highs/lows, market cap, etc)
-3. Display neat & fancy graphs on user commands
+## Requirements 
 
-Built on the Discord.py API
+* [Python](https://python.org)
+* [Turso](https://turso.tech/)
