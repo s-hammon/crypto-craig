@@ -46,7 +46,7 @@ jobs:
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Database Migration
-        run: goose -dir sql/schema turso "${{ secrets.DB_URL }}?authToken=${{ secrets.TURSO_AUTH_TOKEN }}"
+        run: goose -dir sql/schema turso "${{ secrets.DB_URL }}?authToken=${{ secrets.TURSO_AUTH_TOKEN }}" up
 
       - name: Google Auth
         uses: google-github-actions/auth@v0
