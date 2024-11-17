@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Google Auth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
@@ -49,7 +49,7 @@ jobs:
         run: goose -dir sql/schema turso "${{ secrets.DB_URL }}?authToken=${{ secrets.TURSO_AUTH_TOKEN }}" up
 
       - name: Google Auth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Google Auth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
@@ -88,4 +88,6 @@ jobs:
           gcloud compute instances update-container smol-bean \
             --zone us-central1-a \
             --container-image ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest \
-            --container-command "python3,main.py,craig"
+            --container-command python3
+            --container-arg main.py
+            --container-arg craig
