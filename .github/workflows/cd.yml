@@ -22,35 +22,12 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Push to GCP
-        run: gcloud builds submit --tag us-central1-docker.pkg.dev/crypto-craig/crypto-craig-repo/crypto-craig:latest
-
-  deploy-craig:
-    name: Deploy-Craig
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Google Auth
-        uses: google-github-actions/auth@v0
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: Prune Images
-        run: gcloud compute ssh smol-bean --zone=us-central1-a --command "docker image prune -f -a"
-
-      - name: Pull Image
-        run: gcloud compute ssh smol-bean --zone us-central1-a --command "docker pull us-central1-docker.pkg.dev/crypto-craig/crypto-craig-repo/crypto-craig:latest"
-
-      - name: Restart Service
-        run: gcloud compute ssh smol-bean --zone=us-central1-a --command "sudo systemctl restart crypto-craig"
+        run: gcloud builds submit --tag ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest
 
   deploy-crawler:
     name: Deploy-Crawler
     runs-on: ubuntu-latest
+    needs: [push-image]
 
     env:
       CMC_PRO_API_KEY: ${{ secrets.CMC_PRO_API_KEY }}
@@ -69,7 +46,7 @@ jobs:
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Database Migration
-        run: goose -dir sql/schema turso "${DB_URL}?authToken=${TURSO_AUTH_TOKEN}"
+        run: goose -dir sql/schema turso "${{ secrets.DB_URL }}?authToken=${{ secrets.TURSO_AUTH_TOKEN }}"
 
       - name: Google Auth
         uses: google-github-actions/auth@v0
@@ -82,7 +59,33 @@ jobs:
       - name: Update Cloud Run Job
         run: |
           gcloud run jobs update crypto-craig-crawler-job \
-            --image us-central1-docker.pkg.dev/crypto-craig/crypto-craig-repo/crypto-craig-crawler:latest \
+            --image ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest \
             --region us-central1 \
-            --set-env-vars "CMC_PRO_API_KEY=${CMC_PRO_API_KEY},TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN},DB_URL=${DB_URL}"
+            --set-env-vars "CMC_PRO_API_KEY=${CMC_PRO_API_KEY},TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN},DB_URL=${DB_URL}" \
             --command "python3,main.py,crawler,job"
+
+  deploy-craig:
+    name: Deploy-Craig
+    runs-on: ubuntu-latest
+    needs: [push-image]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Prune Images
+        run: gcloud compute ssh smol-bean --zone us-central1-a --command "docker image prune -f -a"
+
+      - name: Update Container
+        run: |
+          gcloud compute instances update-container smol-bean \
+            --zone us-central1-a \
+            --container-image ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest \
+            --container-command "python3,main.py,craig"
