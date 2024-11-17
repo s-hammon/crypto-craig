@@ -40,13 +40,13 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Prune Images
-        run: gcloud compute ssh crypto-craig --zone=us-central1-a --command "docker image prune -f -a"
+        run: gcloud compute ssh smol-bean --zone=us-central1-a --command "docker image prune -f -a"
 
       - name: Pull Image
         run: gcloud compute ssh smol-bean --zone us-central1-a --command "docker pull us-central1-docker.pkg.dev/crypto-craig/crypto-craig-repo/crypto-craig:latest"
 
       - name: Restart Service
-        run: gcloud compute ssh crypto-craig --zone=us-central1-a --command "sudo systemctl restart crypto-craig"
+        run: gcloud compute ssh smol-bean --zone=us-central1-a --command "sudo systemctl restart crypto-craig"
 
   deploy-crawler:
     name: Deploy-Crawler
