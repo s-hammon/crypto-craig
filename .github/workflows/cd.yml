@@ -88,6 +88,6 @@ jobs:
           gcloud compute instances update-container smol-bean \
             --zone us-central1-a \
             --container-image ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest \
-            --container-command python3
-            --container-arg main.py
-            --container-arg craig
+            --container-command python3 \
+            --container-arg main.py \
+            --container-arg craig \
