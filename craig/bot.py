@@ -1,57 +1,65 @@
+import os
+from typing import Sequence, Tuple
+
 import discord
-from sqlalchemy import Engine, select
+from discord.ext import commands
+from sqlalchemy import Engine, Row, create_engine, func, select
 from sqlalchemy.orm import Session
 
 from models.repositories import Listing
 
 
-class CraigBot(discord.Client):
-    def __init__(self, engine: Engine, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.engine = engine
+TURSO_DATABASE_URL = os.environ.get("DB_URL")
+TURSO_AUTH_TOKEN_DISCORD_CLIENT = os.environ.get(
+    "TURSO_AUTH_TOKEN_DISCORD_CLIENT", "MISSING_TURSO_AUTH_TOKEN"
+)
 
-    async def status_task(self):
-        while True:
-            await self.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.watching, name="CoinMarketCap"
-                )
-            )
+db_url = f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN_DISCORD_CLIENT}&secure=true"
 
-    async def on_ready(self):
-        self.loop.create_task(self.status_task())
-        print(f"We have logged in as {self.user}")
+engine = create_engine(db_url)
 
-    async def on_message(self, message: discord.Message) -> None:
-        if message.author == self.user or message.author.bot:
-            return
+class Craig(commands.Bot):
+    def __init__(self, **kwargs):
+        super().__init__(
+            command_prefix="!",
+            decription="Craig the cryptocurrency bot!",
+            intents=kwargs.pop("intents"),
+        )
+        self.engine = kwargs.pop("engine")
 
-        if message.content.startswith("!getprice"):
-            split = message.content.split(" ")
-            if len(split) != 2:
-                await message.reply("Usage: `!getprice <coin>`", mention_author=True)
-                return
 
-            coin = split[1].upper()
+intents = discord.Intents.default()
+intents.message_content = True
+bot = Craig(engine=engine, intents=intents)
 
-            result = get_listing_by_coin(self.engine, coin)
-            if not result:
-                await message.reply(
-                    f"Could not find a price for {coin}.", mention_author=True
-                )
-                return
+@bot.event
+async def on_ready():
+    bot.loop.create_task(status_task())
+    print(f"We have logged in as {bot.user}")
 
-            price = f"${result.price:,.2f}"
-            await message.reply(f"Price for {coin}: {price}", mention_author=True)
+@bot.command()
+async def getprice(ctx, coin: str):
+    if not coin:
+        await ctx.reply("Usage: `!getprice <coin_symbol>`", mention_author=True)
+        return
 
-        if message.content.startswith("!all"):
-            listings = get_select_listings(self.engine)
-            msg = "Current prices:\n"
-            for listing in listings:
-                price = f"${listing.price:,.2f}"
-                msg += f"{listing.coin}: {price}\n"
+    result = get_listing_by_coin(bot.engine, coin.upper())
+    if not result:
+        await ctx.reply(f"Could not find a price for {coin}.", mention_author=True)
+        return
 
-            await message.reply(msg, mention_author=True)
+    price = f"${result.price:,.2f}"
+    await ctx.reply(f"Price for {coin}: {price}", mention_author=True)
+
+
+@bot.command(name="all")
+async def getprice_all(ctx):
+    listings = get_select_listings(bot.engine)
+    msg = "Current prices:\n"
+    for listing in listings:
+        msg += f"{listing[0].coin}: ${listing[0].price:,.2f}\n"
+
+    await ctx.reply(f"```{msg}```", mention_author=True)
 
 
 def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
@@ -71,13 +79,39 @@ def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
     return result
 
 
-def get_select_listings(engine: Engine) -> list[Listing]:
+def get_select_listings(engine: Engine) -> Sequence[Row[Tuple[Listing]]]:
     # TODO: cache
     coins = ["BTC", "ETH", "LINK", "AAVE", "DOGE"]
-    listings = []
-    for coin in coins:
-        listing = get_listing_by_coin(engine, coin)
-        if listing:
-            listings.append(listing)
+    with Session(engine) as session:
+        # use the orm to get the latest listing for each coin
+        subq = (
+            select(Listing.coin, func.max(Listing.updated_at).label("max_updated_at"))
+            .where(Listing.coin.in_(coins))
+            .group_by(Listing.coin)
+            .subquery()
+        )
 
-    return listings
+        stmt = (
+            select(Listing)
+            .join(
+                subq,
+                (Listing.coin == subq.c.coin) & (Listing.updated_at == subq.c.max_updated_at)
+            )
+        )
+
+        result = session.execute(stmt).all()
+
+    return result
+
+async def status_task():
+    while True:
+        await bot.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching, name="CoinMarketCap"
+            )
+        )
+
+def run():
+    DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
+    print(f"using token: {DISCORD_TOKEN[:4]}...{DISCORD_TOKEN[-4:]}")
+    bot.run(DISCORD_TOKEN)
