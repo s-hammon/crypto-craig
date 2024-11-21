@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Sequence, Tuple
 
 import discord
@@ -7,6 +8,7 @@ from sqlalchemy import Engine, Row, create_engine, func, select
 from sqlalchemy.orm import Session
 
 from models.repositories import Listing
+from craig.graphs import coin_scatter_plot
 
 
 TURSO_DATABASE_URL = os.environ.get("DB_URL")
@@ -39,11 +41,9 @@ async def on_ready():
 
 @bot.command()
 async def getprice(ctx, coin: str):
-    if not coin:
-        await ctx.reply("Usage: `!getprice <coin_symbol>`", mention_author=True)
-        return
+    coin = coin.upper()
 
-    result = get_listing_by_coin(bot.engine, coin.upper())
+    result = get_listing_by_coin(bot.engine, coin)
     if not result:
         await ctx.reply(f"Could not find a price for {coin}.", mention_author=True)
         return
@@ -51,6 +51,10 @@ async def getprice(ctx, coin: str):
     price = f"${result.price:,.2f}"
     await ctx.reply(f"Price for {coin}: {price}", mention_author=True)
 
+@getprice.error
+async def getprice_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.reply("Usage: `!getprice <coin_symbol>`", mention_author=True)
 
 @bot.command(name="all")
 async def getprice_all(ctx):
@@ -61,6 +65,51 @@ async def getprice_all(ctx):
 
     await ctx.reply(f"```{msg}```", mention_author=True)
 
+@bot.command()
+async def history(ctx, coin: str, range: str="7d"):
+    coin = coin.upper()
+
+    listings = get_coin_history(coin.upper())
+    time = [listing[0].updated_at for listing in listings]
+    prices = [listing[0].price for listing in listings]
+    img = coin_scatter_plot(coin=coin, time=time, prices=prices)
+    
+    await ctx.reply(file=discord.File(img, filename="plot.png"), mention_author=True)
+
+@history.error
+async def history_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.reply("Usage: `!history <coin_symbol> [range]`", mention_author=True)
+
+def get_coin_history(coin: str, rng: str="7d") -> Sequence[Row[Tuple[Listing]]]:
+    if not coin:
+        raise ValueError("Coin is empty")
+
+    with Session(engine) as session:
+        stmt = (
+            select(Listing)
+            .where(Listing.coin.is_(coin))
+            .where(Listing.updated_at > _range(rng))
+        )
+        result = session.execute(stmt).all() 
+
+    return result
+
+def _range(rng: str) -> datetime:
+    now = datetime.now(timezone.utc) - timedelta(hours=1)
+    match rng:
+        case "7d":
+            return now - timedelta(days=7)
+        case "30d" | "1m":
+            return now - timedelta(days=30)
+        case "3m":
+            return now - timedelta(days=90)
+        case "6m":
+            return now - timedelta(days=180)
+        case "1y":
+            return now - timedelta(days=365)
+        case _:
+            return now - timedelta(days=1)
 
 def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
     # TODO: cache
