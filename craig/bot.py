@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from typing import Sequence, Tuple
 
 import discord
@@ -66,10 +67,11 @@ async def getprice_all(ctx):
     await ctx.reply(f"```{msg}```", mention_author=True)
 
 @bot.command()
-async def history(ctx, coin: str, range: str="7d"):
+async def history(ctx, coin: str, date_range: str="7d"):
     coin = coin.upper()
+    rng = _range(date_range)
 
-    listings = get_coin_history(coin.upper())
+    listings = get_coin_history(coin.upper(), rng)
     time = [listing[0].updated_at for listing in listings]
     prices = [listing[0].price for listing in listings]
     img = coin_scatter_plot(coin=coin, time=time, prices=prices)
@@ -81,7 +83,8 @@ async def history_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("Usage: `!history <coin_symbol> [range]`", mention_author=True)
 
-def get_coin_history(coin: str, rng: str="7d") -> Sequence[Row[Tuple[Listing]]]:
+@lru_cache(maxsize=128)
+def get_coin_history(coin: str, rng: datetime) -> Sequence[Row[Tuple[Listing]]]:
     if not coin:
         raise ValueError("Coin is empty")
 
@@ -89,28 +92,37 @@ def get_coin_history(coin: str, rng: str="7d") -> Sequence[Row[Tuple[Listing]]]:
         stmt = (
             select(Listing)
             .where(Listing.coin.is_(coin))
-            .where(Listing.updated_at > _range(rng))
+            .where(Listing.updated_at > rng)
         )
         result = session.execute(stmt).all() 
 
     return result
 
 def _range(rng: str) -> datetime:
-    now = datetime.now(timezone.utc) - timedelta(hours=1)
+    now = _sanitize_date(datetime.now(timezone.utc)) - timedelta(hours=1)
     match rng:
         case "7d":
-            return now - timedelta(days=7)
+            return _sanitize_date(now) - timedelta(days=7)
         case "30d" | "1m":
-            return now - timedelta(days=30)
+            return _sanitize_date(now) - timedelta(days=30)
         case "3m":
-            return now - timedelta(days=90)
+            return _sanitize_date(now) - timedelta(days=90)
         case "6m":
-            return now - timedelta(days=180)
+            return _sanitize_date(now) - timedelta(days=180)
         case "1y":
-            return now - timedelta(days=365)
+            return _sanitize_date(now) - timedelta(days=365)
         case _:
-            return now - timedelta(days=1)
+            return _sanitize_time(now) - timedelta(hours=1)
 
+def _sanitize_time(date: datetime) -> datetime:
+    # remove minutes, seconds, and microseconds
+    return date.replace(minute=0, second=0, microsecond=0)
+    
+def _sanitize_date(date: datetime) -> datetime:
+    # also remove hours
+    return date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+@lru_cache(maxsize=128)
 def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
     # TODO: cache
     if not coin:
@@ -128,6 +140,7 @@ def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
     return result
 
 
+@lru_cache(maxsize=128)
 def get_select_listings(engine: Engine) -> Sequence[Row[Tuple[Listing]]]:
     # TODO: cache
     coins = ["BTC", "ETH", "LINK", "AAVE", "DOGE"]
