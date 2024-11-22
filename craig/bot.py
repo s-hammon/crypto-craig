@@ -6,7 +6,7 @@ from discord.ext import commands
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from craig.graphs import coin_scatter_plot
+from craig.graphs import coin_scatter_plot, dollar_format
 from craig.handlers import (
     get_coin_history,
     get_listing_by_coin,
@@ -58,7 +58,7 @@ async def getprice(ctx, coin: str):
         await ctx.reply(f"Could not find a price for {coin}.", mention_author=True)
         return
 
-    price = f"${result.price:,.2f}"
+    price = _cent_format(result.price)
     await ctx.reply(f"Price for {coin}: {price}", mention_author=True)
 
 
@@ -75,7 +75,8 @@ async def getprice_all(ctx):
     listings = get_select_listings(bot.session)
     msg = "Current prices:\n"
     for listing in listings:
-        msg += f"{listing[0].coin}: ${listing[0].price:,.2f}\n"
+        price = _cent_format(listing[0].price)
+        msg += f"{listing[0].coin}: ${price:,.2f}\n"
 
     await ctx.reply(f"```{msg}```", mention_author=True)
 
@@ -128,10 +129,14 @@ def _range(rng: str) -> datetime:
 def _sanitize_time(date: datetime) -> datetime:
     return date.replace(minute=0, second=0, microsecond=0)
 
-
 def _sanitize_date(date: datetime) -> datetime:
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
 
+def _cent_format(x: float) -> str:
+    if x >= 0.01:
+        return f"${x:,.2f}"
+    else:
+        return f"${x:,.6f}"
 
 def run():
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
