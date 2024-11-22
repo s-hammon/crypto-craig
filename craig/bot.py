@@ -5,8 +5,8 @@ from typing import Sequence, Tuple
 
 import discord
 from discord.ext import commands
-from sqlalchemy import Engine, Row, create_engine, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import Row, create_engine, func, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from models.repositories import Listing
 from craig.graphs import coin_scatter_plot
@@ -20,6 +20,7 @@ TURSO_AUTH_TOKEN_DISCORD_CLIENT = os.environ.get(
 db_url = f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN_DISCORD_CLIENT}&secure=true"
 
 engine = create_engine(db_url)
+CraigSession = sessionmaker(bind=engine)
 
 class Craig(commands.Bot):
     def __init__(self, **kwargs):
@@ -28,12 +29,16 @@ class Craig(commands.Bot):
             decription="Craig the cryptocurrency bot!",
             intents=kwargs.pop("intents"),
         )
-        self.engine = kwargs.pop("engine")
+
+
+    @property
+    def session(self):
+        return CraigSession()
 
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = Craig(engine=engine, intents=intents)
+bot = Craig(intents=intents)
 
 @bot.event
 async def on_ready():
@@ -44,7 +49,7 @@ async def on_ready():
 async def getprice(ctx, coin: str):
     coin = coin.upper()
 
-    result = get_listing_by_coin(bot.engine, coin)
+    result = get_listing_by_coin(bot.session, coin)
     if not result:
         await ctx.reply(f"Could not find a price for {coin}.", mention_author=True)
         return
@@ -56,10 +61,12 @@ async def getprice(ctx, coin: str):
 async def getprice_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("Usage: `!getprice <coin_symbol>`", mention_author=True)
+    else:
+        raise error
 
 @bot.command(name="all")
 async def getprice_all(ctx):
-    listings = get_select_listings(bot.engine)
+    listings = get_select_listings(bot.session)
     msg = "Current prices:\n"
     for listing in listings:
         msg += f"{listing[0].coin}: ${listing[0].price:,.2f}\n"
@@ -71,7 +78,7 @@ async def history(ctx, coin: str, date_range: str="7d"):
     coin = coin.upper()
     rng = _range(date_range)
 
-    listings = get_coin_history(coin.upper(), rng)
+    listings = get_coin_history(bot.session, coin.upper(), rng)
     time = [listing[0].updated_at for listing in listings]
     prices = [listing[0].price for listing in listings]
     img = coin_scatter_plot(coin=coin, time=time, prices=prices)
@@ -84,11 +91,11 @@ async def history_error(ctx, error):
         await ctx.reply("Usage: `!history <coin_symbol> [range]`", mention_author=True)
 
 @lru_cache(maxsize=128)
-def get_coin_history(coin: str, rng: datetime) -> Sequence[Row[Tuple[Listing]]]:
+def get_coin_history(session: Session, coin: str, rng: datetime) -> Sequence[Row[Tuple[Listing]]]:
     if not coin:
         raise ValueError("Coin is empty")
 
-    with Session(engine) as session:
+    with session:
         stmt = (
             select(Listing)
             .where(Listing.coin.is_(coin))
@@ -115,20 +122,17 @@ def _range(rng: str) -> datetime:
             return _sanitize_time(now) - timedelta(hours=1)
 
 def _sanitize_time(date: datetime) -> datetime:
-    # remove minutes, seconds, and microseconds
     return date.replace(minute=0, second=0, microsecond=0)
     
 def _sanitize_date(date: datetime) -> datetime:
-    # also remove hours
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
 
 @lru_cache(maxsize=128)
-def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
-    # TODO: cache
+def get_listing_by_coin(session: Session, coin: str) -> Listing | None:
     if not coin:
         raise ValueError("Coin is empty")
 
-    with Session(engine) as session:
+    with session:
         stmt = (
             select(Listing)
             .where(Listing.coin.is_(coin))
@@ -141,11 +145,9 @@ def get_listing_by_coin(engine: Engine, coin: str) -> Listing | None:
 
 
 @lru_cache(maxsize=128)
-def get_select_listings(engine: Engine) -> Sequence[Row[Tuple[Listing]]]:
-    # TODO: cache
+def get_select_listings(session: Session) -> Sequence[Row[Tuple[Listing]]]:
     coins = ["BTC", "ETH", "LINK", "AAVE", "DOGE"]
-    with Session(engine) as session:
-        # use the orm to get the latest listing for each coin
+    with session:
         subq = (
             select(Listing.coin, func.max(Listing.updated_at).label("max_updated_at"))
             .where(Listing.coin.in_(coins))
