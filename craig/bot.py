@@ -6,7 +6,7 @@ from discord.ext import commands
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from craig.graphs import coin_scatter_plot, dollar_format
+from craig.graphs import coin_scatter_plot
 from craig.handlers import (
     get_coin_history,
     get_listing_by_coin,
@@ -49,7 +49,7 @@ async def on_ready():
     print(f"We have logged in as {bot.user}")
 
 
-@bot.command()
+@bot.command(help="Get the most recent hourly price (in USD) for a coin")
 async def getprice(ctx, coin: str):
     coin = coin.upper()
 
@@ -70,7 +70,7 @@ async def getprice_error(ctx, error):
         raise error
 
 
-@bot.command(name="all")
+@bot.command(name="all", help="Get the most recent hourly prices (in USD) for a selection of coins")
 async def getprice_all(ctx):
     listings = get_select_listings(bot.session)
     msg = "Current prices:\n"
@@ -81,7 +81,7 @@ async def getprice_all(ctx):
     await ctx.reply(f"```{msg}```", mention_author=True)
 
 
-@bot.command()
+@bot.command(help="Plot historical price for a coin")
 async def history(ctx, coin: str, date_range: str = "7d"):
     coin = coin.upper()
     rng = _range(date_range)
@@ -97,7 +97,16 @@ async def history(ctx, coin: str, date_range: str = "7d"):
 @history.error
 async def history_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.reply("Usage: `!history <coin_symbol> [range]`", mention_author=True)
+        await ctx.reply(
+            '''
+```
+Usage:
+!history <coin_symbol> [range]
+[range] options: 1d/24h, 7d (default), 30d, 3m, 6m, 1y
+```
+            ''',
+            mention_author=True,
+        )
 
 
 async def status_task():
