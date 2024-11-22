@@ -1,15 +1,17 @@
 import os
 from datetime import datetime, timedelta, timezone
-from functools import lru_cache
-from typing import Sequence, Tuple
 
 import discord
 from discord.ext import commands
-from sqlalchemy import Row, create_engine, func, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from models.repositories import Listing
 from craig.graphs import coin_scatter_plot
+from craig.handlers import (
+    get_coin_history,
+    get_listing_by_coin,
+    get_select_listings,
+)
 
 
 TURSO_DATABASE_URL = os.environ.get("DB_URL")
@@ -22,6 +24,7 @@ db_url = f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN_DISCORD_CLIE
 engine = create_engine(db_url)
 CraigSession = sessionmaker(bind=engine)
 
+
 class Craig(commands.Bot):
     def __init__(self, **kwargs):
         super().__init__(
@@ -29,7 +32,6 @@ class Craig(commands.Bot):
             decription="Craig the cryptocurrency bot!",
             intents=kwargs.pop("intents"),
         )
-
 
     @property
     def session(self):
@@ -40,10 +42,12 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = Craig(intents=intents)
 
+
 @bot.event
 async def on_ready():
     bot.loop.create_task(status_task())
     print(f"We have logged in as {bot.user}")
+
 
 @bot.command()
 async def getprice(ctx, coin: str):
@@ -57,12 +61,14 @@ async def getprice(ctx, coin: str):
     price = f"${result.price:,.2f}"
     await ctx.reply(f"Price for {coin}: {price}", mention_author=True)
 
+
 @getprice.error
 async def getprice_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("Usage: `!getprice <coin_symbol>`", mention_author=True)
     else:
         raise error
+
 
 @bot.command(name="all")
 async def getprice_all(ctx):
@@ -73,8 +79,9 @@ async def getprice_all(ctx):
 
     await ctx.reply(f"```{msg}```", mention_author=True)
 
+
 @bot.command()
-async def history(ctx, coin: str, date_range: str="7d"):
+async def history(ctx, coin: str, date_range: str = "7d"):
     coin = coin.upper()
     rng = _range(date_range)
 
@@ -82,28 +89,24 @@ async def history(ctx, coin: str, date_range: str="7d"):
     time = [listing[0].updated_at for listing in listings]
     prices = [listing[0].price for listing in listings]
     img = coin_scatter_plot(coin=coin, time=time, prices=prices)
-    
+
     await ctx.reply(file=discord.File(img, filename="plot.png"), mention_author=True)
+
 
 @history.error
 async def history_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("Usage: `!history <coin_symbol> [range]`", mention_author=True)
 
-@lru_cache(maxsize=128)
-def get_coin_history(session: Session, coin: str, rng: datetime) -> Sequence[Row[Tuple[Listing]]]:
-    if not coin:
-        raise ValueError("Coin is empty")
 
-    with session:
-        stmt = (
-            select(Listing)
-            .where(Listing.coin.is_(coin))
-            .where(Listing.updated_at > rng)
+async def status_task():
+    while True:
+        await bot.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching, name="CoinMarketCap"
+            )
         )
-        result = session.execute(stmt).all() 
 
-    return result
 
 def _range(rng: str) -> datetime:
     now = _sanitize_date(datetime.now(timezone.utc)) - timedelta(hours=1)
@@ -121,59 +124,14 @@ def _range(rng: str) -> datetime:
         case _:
             return _sanitize_time(now) - timedelta(hours=1)
 
+
 def _sanitize_time(date: datetime) -> datetime:
     return date.replace(minute=0, second=0, microsecond=0)
-    
+
+
 def _sanitize_date(date: datetime) -> datetime:
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
 
-@lru_cache(maxsize=128)
-def get_listing_by_coin(session: Session, coin: str) -> Listing | None:
-    if not coin:
-        raise ValueError("Coin is empty")
-
-    with session:
-        stmt = (
-            select(Listing)
-            .where(Listing.coin.is_(coin))
-            .order_by(Listing.updated_at.desc())
-            .limit(1)
-        )
-        result = session.scalar(stmt)
-
-    return result
-
-
-@lru_cache(maxsize=128)
-def get_select_listings(session: Session) -> Sequence[Row[Tuple[Listing]]]:
-    coins = ["BTC", "ETH", "LINK", "AAVE", "DOGE"]
-    with session:
-        subq = (
-            select(Listing.coin, func.max(Listing.updated_at).label("max_updated_at"))
-            .where(Listing.coin.in_(coins))
-            .group_by(Listing.coin)
-            .subquery()
-        )
-
-        stmt = (
-            select(Listing)
-            .join(
-                subq,
-                (Listing.coin == subq.c.coin) & (Listing.updated_at == subq.c.max_updated_at)
-            )
-        )
-
-        result = session.execute(stmt).all()
-
-    return result
-
-async def status_task():
-    while True:
-        await bot.change_presence(
-            activity=discord.Activity(
-                type=discord.ActivityType.watching, name="CoinMarketCap"
-            )
-        )
 
 def run():
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")

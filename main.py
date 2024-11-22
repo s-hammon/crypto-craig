@@ -34,7 +34,10 @@ def main():
     match args.command:
         case "crawler":
             from crawler.worker import coin_job
-            DB_URL = f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN}&secure=true"
+
+            DB_URL = (
+                f"sqlite+{TURSO_DATABASE_URL}/?authToken={TURSO_AUTH_TOKEN}&secure=true"
+            )
 
             # if job, run worker.coin_job
             if args.job:

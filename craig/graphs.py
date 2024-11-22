@@ -1,10 +1,8 @@
-from datetime import datetime
 from io import BytesIO
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
-import numpy as np
 
 
 # Import data retrieved from database; return a scatter plot
@@ -17,7 +15,7 @@ def coin_scatter_plot(**kwargs):
     x_values = mdates.date2num(time)
 
     _, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(x_values, prices, color='b')
+    ax.plot(x_values, prices, color="b")
 
     locator = mdates.AutoDateLocator(maxticks=5)
     formatter = mdates.AutoDateFormatter(locator)
@@ -37,7 +35,8 @@ def coin_scatter_plot(**kwargs):
     img.seek(0)
 
     return img
-    
+
+
 def dollar_format(x: int, pos):
     if x >= 10_000:
         return f"${x/1_000:,.0f}k"
@@ -47,4 +46,3 @@ def dollar_format(x: int, pos):
         return f"${x:,.2f}"
     else:
         return f"${x:,.6f}"
-        
