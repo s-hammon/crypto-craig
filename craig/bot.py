@@ -70,7 +70,10 @@ async def getprice_error(ctx, error):
         raise error
 
 
-@bot.command(name="all", help="Get the most recent hourly prices (in USD) for a selection of coins")
+@bot.command(
+    name="all",
+    help="Get the most recent hourly prices (in USD) for a selection of coins",
+)
 async def getprice_all(ctx):
     listings = get_select_listings(bot.session)
     msg = "Current prices:\n"
@@ -98,13 +101,13 @@ async def history(ctx, coin: str, date_range: str = "7d"):
 async def history_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply(
-            '''
+            """
 ```
 Usage:
 !history <coin_symbol> [range]
 [range] options: 1d/24h, 7d (default), 30d, 3m, 6m, 1y
 ```
-            ''',
+            """,
             mention_author=True,
         )
 
@@ -138,14 +141,17 @@ def _range(rng: str) -> datetime:
 def _sanitize_time(date: datetime) -> datetime:
     return date.replace(minute=0, second=0, microsecond=0)
 
+
 def _sanitize_date(date: datetime) -> datetime:
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
+
 
 def _cent_format(x: float) -> str:
     if x >= 0.01:
         return f"${x:,.2f}"
     else:
         return f"${x:,.6f}"
+
 
 def run():
     DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "MISSING_DISCORD_TOKEN")
