@@ -34,11 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [push-image]
 
-    env:
-      CMC_PRO_API_KEY: ${{ secrets.CMC_PRO_API_KEY }}
-      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-      DB_URL: ${{ secrets.DB_URL }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +61,6 @@ jobs:
           gcloud run jobs update crypto-craig-crawler-job \
             --image ${{ secrets.GCP_ARTIFACT_IMAGE }}:latest \
             --region us-central1 \
-            --set-env-vars "CMC_PRO_API_KEY=${CMC_PRO_API_KEY},TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN},DB_URL=${DB_URL}" \
             --command "python3,main.py,crawler,job"
 
   deploy-craig:
