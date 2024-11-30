@@ -10,6 +10,12 @@ pretty:
 	@ruff format && ruff check
 
 test:
-	@python -m unittest discover -s tests -v
+	@python3 -m unittest discover -s tests -v
 
-.PHONY: up down pretty test
+fetch:
+	@python3 main.py crawler job
+
+bot:
+	@python3 main.py craig
+
+.PHONY: up down pretty test fetch bot
