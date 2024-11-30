@@ -15,7 +15,7 @@ A [Discord.py](https://discordpy.readthedocs.io/en/stable) project. Use `!getpri
 
 ### Setting up the database & crawler
 
-*TODO - create a setup.sh script
+*TODO - create a setup.sh script*
 
 1. Clone the repo: 
 
