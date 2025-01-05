@@ -2,7 +2,7 @@
 
 [![python](https://img.shields.io/badge/Python-3.12.7-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)![Deploy](https://github.com/s-hammon/crypto-craig/workflows/ci/badge.svg)
 
-A [Discord.py](https://discordpy.readthedocs.io/en/stable) project. Use `!getprice <coin symbol>` in chat to get the latst price of your favorite crypto. 
+A [Discord.py](https://discordpy.readthedocs.io/en/stable) project. Use `!getprice <coin symbol>` in chat to get the latest price of your favorite crypto. 
 
 ## Requirements 
 
